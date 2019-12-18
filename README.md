@@ -41,6 +41,17 @@ comma-delimited value like so:
 veracode --sandbox --appName=<your-veracode-app-name> --excludes='node_modules/**/*,lib/**/*'
 ```
 
+## Command-line Options
+
+| FLAG | VALUE | DESCRIPTION |
+|------|-------|-------------|
+|`sandbox`|none|Trigger a veracode scan in a sandbox under a provided (existing) app
+|`excludes`|comma-delimited string|Override what folders/files are excluded from the project for scanning. Defaults to `node_modules/**/*`.
+|`appId`|integer|Veracode App ID to run the scans under. _Must have appId OR appName specified_
+|`appName`|string|Veracode App Name to run the scans under. _Must have appId OR appName specified_
+|`scanAllNonfatalTopLevelModules`|true or **false**|See Veracode doc for [beginprescan.do](https://help.veracode.com/reader/LMv_dtSHyb7iIxAQznC~9w/PX5ReM5acqjM~IOVEg2~rA)
+|`autoScan`|**true** or false|See Veracode doc for [beginprescan.do](https://help.veracode.com/reader/LMv_dtSHyb7iIxAQznC~9w/PX5ReM5acqjM~IOVEg2~rA)
+
 ## Useful Resources
 - [Veracode API Doc](https://help.veracode.com/reader/LMv_dtSHyb7iIxAQznC~9w/G1Nd5yH0QSlT~vPccPhtRQ)
 - [Veracode Packaging Instructions for JavaScript and TypeScript](https://help.veracode.com/reader/4EKhlLSMHm5jC8P8j3XccQ/AM8PAkQKwsHbNYXy2VeX5Q)

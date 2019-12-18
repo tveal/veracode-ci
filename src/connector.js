@@ -10,6 +10,8 @@ const defaults = {
   appVersion: process.env.npm_package_version,
   sandboxName: process.env.npm_package_name,
   excludes: [ 'node_modules/**/*' ],
+  scanAllNonfatalTopLevelModules: false,
+  autoScan: true,
 };
 
 class Connector {
@@ -21,6 +23,8 @@ class Connector {
     this.appVersion = options.appVersion || defaults.appVersion;
     this.sandboxName = options.sandboxName || defaults.sandboxName;
     this.excludes = options.excludes || defaults.excludes;
+    this.scanAllNonfatalTopLevelModules = options.scanAllNonfatalTopLevelModules || defaults.scanAllNonfatalTopLevelModules;
+    this.autoScan = options.autoScan || defaults.autoScan;
 
     this._validatePropSet('robotId');
     this._validatePropSet('robotKey');
@@ -42,7 +46,8 @@ class Connector {
     const appInfo = {
       appId: this.appId,
       appVersion: this.appVersion,
-      autoScan: true,
+      autoScan: this.autoScan,
+      scanAllNonfatalTopLevelModules: this.scanAllNonfatalTopLevelModules,
     };
 
     const hasSandbox = (await this.client.getSandboxList(appInfo)).some((sb) => {
