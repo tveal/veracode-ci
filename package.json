@@ -1,6 +1,6 @@
 {
   "name": "veracode-ci",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Veracode client for triggering scans in Continuous Integration",
   "bin": {
     "veracode": "lib/index.js"
@@ -76,6 +76,7 @@
   },
   "dependencies": {
     "@jupiterone/veracode-client": "^0.3.2",
+    "console-log-level": "^1.4.1",
     "yargs": "^15.0.2"
   }
 }
