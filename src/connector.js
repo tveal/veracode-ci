@@ -1,6 +1,7 @@
 import os from 'os';
 import path from 'path';
 import VeracodeClient from '@jupiterone/veracode-client';
+import log from './log';
 
 
 class Connector {
@@ -43,7 +44,7 @@ class Connector {
 
     await this._initAppId();
     this._validatePropSet('appId');
-    console.log(`Using appId: ${this.appId}`);
+    log.info(`Using appId: ${this.appId}`);
 
     const appInfo = {
       appId: this.appId,
@@ -61,28 +62,28 @@ class Connector {
     });
 
     if (!hasSandbox) {
-      console.log(`Need to setup new sandbox for ${this.sandboxName}`);
+      log.info(`Need to setup new sandbox for ${this.sandboxName}`);
       appInfo.sandboxName = this.sandboxName;
       appInfo.sandboxId = (await this.client.createSandbox(appInfo)).sandbox._attributes.sandbox_id;
-      console.log(`New sandbox created, id: ${appInfo.sandboxId}`);
+      log.info(`New sandbox created, id: ${appInfo.sandboxId}`);
     }
 
-    console.log(`Setting up new scan for ${this.sandboxName}, sandbox_id: ${appInfo.sandboxId}`);
+    log.info(`Setting up new scan for ${this.sandboxName}, sandbox_id: ${appInfo.sandboxId}`);
     try {
       const buildId = (await this.client.createBuild(appInfo)).build._attributes.build_id;
-      console.log('New Build ID:', buildId);
+      log.info(`New Build ID: ${buildId}`);
     } catch (err) {
-      console.log(`Failed to create a new release-versioned scan for ${this.sandboxName}; ${err}`);
-      console.log('> Will try to scan as an auto-versioned scan...');
+      log.warn(`Failed to create a new release-versioned scan for ${this.sandboxName}; ${err}`);
+      log.warn('> Will try to scan as an auto-versioned scan...');
     }
 
     appInfo.file = path.join(os.tmpdir(), `${this.sandboxName}.zip`);
     await this.client.createZipArchive(`${process.cwd()}`, appInfo.file, this.excludes);
     const fileId = (await this.client.uploadFile(appInfo)).file._attributes.file_id;
-    console.log('New File ID:', fileId);
+    log.info(`New File ID: ${fileId}`);
 
     const scanVersion = (await this.client.beginPrescan(appInfo)).build._attributes.version;
-    console.log('New Scan Version:', scanVersion);
+    log.info(`New Scan Version: ${scanVersion}`);
   }
 
   _validatePropSet(propName) {

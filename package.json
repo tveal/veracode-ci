@@ -76,6 +76,7 @@
   },
   "dependencies": {
     "@jupiterone/veracode-client": "^0.3.2",
+    "console-log-level": "^1.4.1",
     "yargs": "^15.0.2"
   }
 }

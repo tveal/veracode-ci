@@ -1,19 +1,44 @@
 import 'mocha';
 import { expect } from 'chai';
 import * as sinon from 'sinon';
+import os from 'os';
 import VeracodeClient from '@jupiterone/veracode-client';
 
 import Connector from '../../src/connector';
+import log from '../../src/log';
+import {
+  VERA_APP_LIST,
+  VERA_SANDBOX_LIST,
+  VERA_SANDBOX_OBJ,
+  VERA_BUILD_OBJ,
+  VERA_FILE_OBJ,
+  VERA_PRESCAN_OBJ,
+} from '../fixtures';
 
-const VC_CLIENT = sinon.createStubInstance(VeracodeClient);
+const getMockedClient = () => sinon.createStubInstance(VeracodeClient, {
+  getAppList: Promise.resolve(VERA_APP_LIST),
+  getSandboxList: Promise.resolve(VERA_SANDBOX_LIST),
+  createSandbox: Promise.resolve(VERA_SANDBOX_OBJ),
+  createBuild: Promise.resolve(VERA_BUILD_OBJ),
+  createZipArchive: () => console.log('called createZipArchive'),
+  uploadFile: Promise.resolve(VERA_FILE_OBJ),
+  beginPrescan: Promise.resolve(VERA_PRESCAN_OBJ),
+});
 const env = { ...process.env };
 
 describe('connector.js', () => {
+  let logInfoStub;
+  let logWarnStub;
   beforeEach(() => {
     process.env = {};
+
+    logInfoStub = sinon.stub(log, 'info');
+    logWarnStub = sinon.stub(log, 'warn');
+    sinon.stub(os, 'tmpdir').returns('/tmp/test');
   });
   afterEach(() => {
     process.env = { ...env };
+    sinon.restore();
   });
   describe('Constructor', () => {
     it('should have default values for minimal env variables', () => {
@@ -129,6 +154,135 @@ describe('connector.js', () => {
       }
 
       expect(expectedError.message).to.equal('Property robotKey was not set. Cannot continue.');
+    });
+  });
+  describe('scanInSandbox', () => {
+    describe('Required data checks', () => {
+      it('should throw error if no appVersion', async () => {
+        const options = {
+          robotId: 'test-robot-id',
+          robotKey: 'test-robot-key',
+        };
+
+        let err = null;
+        try {
+          const cx = new Connector(options);
+          await cx.scanInSandbox();
+        } catch (e) {
+          err = e;
+        }
+
+        expect(err.message).to.equal('Property appVersion was not set. Cannot continue.');
+      });
+      it('should throw error if no sandboxName', async () => {
+        const options = {
+          robotId: 'test-robot-id',
+          robotKey: 'test-robot-key',
+          appVersion: '0.1.0',
+        };
+
+        let err = null;
+        try {
+          const cx = new Connector(options);
+          await cx.scanInSandbox();
+        } catch (e) {
+          err = e;
+        }
+
+        expect(err.message).to.equal('Property sandboxName was not set. Cannot continue.');
+      });
+      it('should throw error if no appId or appName', async () => {
+        const options = {
+          robotId: 'test-robot-id',
+          robotKey: 'test-robot-key',
+          appVersion: '0.1.0',
+          sandboxName: 'test-sandbox-name',
+        };
+
+        let err = null;
+        try {
+          const cx = new Connector(options);
+          await cx.scanInSandbox();
+        } catch (e) {
+          err = e;
+        }
+
+        expect(err.message).to.equal('Property appId was not set. Cannot continue.');
+      });
+    });
+    it('should trigger new scan for existing sandbox', async () => {
+      const options = {
+        robotId: 'test-robot-id',
+        robotKey: 'test-robot-key',
+        appVersion: '0.1.0',
+        sandboxName: 'test-sandbox-22',
+        appName: 'test-app-2',
+      };
+
+      const cx = new Connector(options);
+      cx.client = getMockedClient();
+      await cx.scanInSandbox();
+
+      expect(logInfoStub).calledWith('Using appId: 2');
+      expect(logInfoStub).calledWith('Setting up new scan for test-sandbox-22, sandbox_id: 22');
+      expect(logInfoStub).calledWith('New Build ID: 1234');
+      expect(logInfoStub).calledWith('New File ID: 2345');
+      expect(logInfoStub).calledWith('New Scan Version: Scan Dec 24 2019 (1)');
+
+      // getSandboxList is called with a mutable object, appInfo,
+      // so the spy compares the final state of the object here, instead of
+      // what is called before certain mutations
+      expect(cx.client.getSandboxList).calledWith({
+        appId: 2,
+        appVersion: '0.1.0',
+        autoScan: true,
+        scanAllNonfatalTopLevelModules: false,
+        sandboxId: 22,
+        file: '/tmp/test/test-sandbox-22.zip',
+      });
+    });
+    it('should create new sandbox and trigger scan', async () => {
+      const options = {
+        robotId: 'test-robot-id',
+        robotKey: 'test-robot-key',
+        appVersion: '0.1.0',
+        sandboxName: 'test-sandbox-44',
+        appName: 'test-app-3',
+      };
+
+      const cx = new Connector(options);
+      cx.client = getMockedClient();
+      await cx.scanInSandbox();
+
+      expect(logInfoStub).calledWith('Using appId: 3');
+      expect(logInfoStub).calledWith('Need to setup new sandbox for test-sandbox-44');
+      expect(logInfoStub).calledWith('New sandbox created, id: 9876');
+      expect(logInfoStub).calledWith('Setting up new scan for test-sandbox-44, sandbox_id: 9876');
+      expect(logInfoStub).calledWith('New Build ID: 1234');
+      expect(logInfoStub).calledWith('New File ID: 2345');
+      expect(logInfoStub).calledWith('New Scan Version: Scan Dec 24 2019 (1)');
+    });
+    it('should continue to trigger new scan for existing sandbox when named build already exists', async () => {
+      const options = {
+        robotId: 'test-robot-id',
+        robotKey: 'test-robot-key',
+        appVersion: '0.1.0',
+        sandboxName: 'test-sandbox-22',
+        appName: 'test-app-2',
+      };
+      const errMsg = 'Cannot create new build for 0.1.0 as it already exists.';
+
+      const cx = new Connector(options);
+      cx.client = getMockedClient();
+      cx.client.createBuild = () => Promise.reject(new Error(errMsg));
+      await cx.scanInSandbox();
+
+      expect(logInfoStub).calledWith('Using appId: 2');
+      expect(logInfoStub).calledWith('Setting up new scan for test-sandbox-22, sandbox_id: 22');
+      expect(logWarnStub).calledWith(`Failed to create a new release-versioned scan for test-sandbox-22; Error: ${errMsg}`);
+      expect(logWarnStub).calledWith('> Will try to scan as an auto-versioned scan...');
+      expect(logInfoStub).calledWith('New File ID: 2345');
+      expect(logInfoStub).calledWith('New Scan Version: Scan Dec 24 2019 (1)');
     });
   });
 });
