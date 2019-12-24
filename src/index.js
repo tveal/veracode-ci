@@ -4,7 +4,6 @@ import { argv } from 'yargs';
 import Connector from './connector';
 
 const main = async () => {
-  
   if (argv.sandbox) {
     console.log('Veracode: scanning in sandbox...');
 
@@ -28,7 +27,6 @@ const main = async () => {
   } else {
     console.log('Veracode: DO NOTHING; no --sandbox flag and nothing else implemented...');
   }
-
 };
 
 main();

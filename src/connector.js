@@ -2,20 +2,21 @@ import os from 'os';
 import path from 'path';
 import VeracodeClient from '@jupiterone/veracode-client';
 
-const defaults = {
-  robotId: process.env.VERA_ID,
-  robotKey: process.env.VERA_KEY,
-  appId: process.env.VERA_APP_ID,
-  appName: process.env.VERA_APP_NAME,
-  appVersion: process.env.npm_package_version,
-  sandboxName: process.env.npm_package_name,
-  excludes: [ 'node_modules/**/*' ],
-  scanAllNonfatalTopLevelModules: false,
-  autoScan: true,
-};
 
 class Connector {
   constructor(options = {}) {
+    const defaults = {
+      robotId: process.env.VERA_ID,
+      robotKey: process.env.VERA_KEY,
+      appId: process.env.VERA_APP_ID,
+      appName: process.env.VERA_APP_NAME,
+      appVersion: process.env.npm_package_version,
+      sandboxName: process.env.npm_package_name,
+      excludes: ['node_modules/**/*'],
+      scanAllNonfatalTopLevelModules: false,
+      autoScan: true,
+    };
+
     this.robotId = options.robotId || defaults.robotId;
     this.robotKey = options.robotKey || defaults.robotKey;
     this.appId = options.appId || defaults.appId;
@@ -23,18 +24,19 @@ class Connector {
     this.appVersion = options.appVersion || defaults.appVersion;
     this.sandboxName = options.sandboxName || defaults.sandboxName;
     this.excludes = options.excludes || defaults.excludes;
-    this.scanAllNonfatalTopLevelModules = options.scanAllNonfatalTopLevelModules || defaults.scanAllNonfatalTopLevelModules;
-    this.autoScan = options.autoScan || defaults.autoScan;
+    this.scanAllNonfatalTopLevelModules = typeof options.scanAllNonfatalTopLevelModules === 'boolean'
+      ? options.scanAllNonfatalTopLevelModules : defaults.scanAllNonfatalTopLevelModules;
+    this.autoScan = typeof options.autoScan === 'boolean' ? options.autoScan : defaults.autoScan;
 
     this._validatePropSet('robotId');
     this._validatePropSet('robotKey');
 
     this.client = new VeracodeClient(
       this.robotId,
-      this.robotKey
+      this.robotKey,
     );
   }
-  
+
   async scanInSandbox() {
     this._validatePropSet('appVersion');
     this._validatePropSet('sandboxName');
@@ -42,7 +44,7 @@ class Connector {
     await this._initAppId();
     this._validatePropSet('appId');
     console.log(`Using appId: ${this.appId}`);
-    
+
     const appInfo = {
       appId: this.appId,
       appVersion: this.appVersion,
@@ -91,14 +93,13 @@ class Connector {
 
   async _initAppId() {
     if (!this.appId && this.appName) {
-
       (await this.client.getAppList()).some((app) => {
         const isMatch = app._attributes.app_name === this.appName;
         if (isMatch) {
           this.appId = app._attributes.app_id;
         }
+        return isMatch;
       });
-
     }
   }
 }
