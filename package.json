@@ -1,6 +1,6 @@
 {
   "name": "veracode-ci",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Veracode client for triggering scans in Continuous Integration",
   "bin": {
     "veracode": "lib/index.js"
