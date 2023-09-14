@@ -1,10 +1,11 @@
+# NOTE: retired; switching to github actions
 image: "node:16"
 
 stages:
   - build
   - publish
 
-build:
+.build: # disabled
   stage: build
   script:
     - npm ci
@@ -16,7 +17,7 @@ build:
       - lib
     expire_in: 2 days
 
-publish:
+.publish: # disabled
   stage: publish
   only:
     refs:
