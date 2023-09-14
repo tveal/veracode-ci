@@ -1,4 +1,4 @@
-image: "node:8"
+image: "node:16"
 
 stages:
   - build
@@ -20,7 +20,7 @@ publish:
   stage: publish
   only:
     refs:
-      - master
+      - main
   script:
     - echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}'>.npmrc
     - git config user.name "gitlab-ci"

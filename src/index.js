@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { argv } from 'yargs';
+import utils from './utils';
 import Connector from './connector';
 
 const main = async () => {
@@ -9,7 +10,7 @@ const main = async () => {
 
     let excludes = null;
     if (argv.excludes) {
-      excludes = argv.excludes.split(',');
+      excludes = utils.parseStringToArray(argv.excludes);
     }
     const options = {
       appId: argv.appId,
